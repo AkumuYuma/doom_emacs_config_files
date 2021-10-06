@@ -53,7 +53,38 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 
+
+;; Remaps
+
 ;; Remap della evil mode
 ;; Frecce destra e sinistra per nuovo buffer
 (define-key evil-normal-state-map (kbd "<right>") 'evil-next-buffer)
 (define-key evil-normal-state-map (kbd "<left>") 'evil-prev-buffer)
+
+;; Remap generici
+;; C-c t per aprire un terminale
+(define-key global-map (kbd "C-c t") 'vterm)
+;; C-c l per stampare l'intestazione nella org mode del linugaggio scelto
+;; Viene usata questa sintassi diversa perchè faccio in modo che il keybinding valga solo nella org mode
+(with-eval-after-load 'org
+  (bind-key (kbd "C-c l") 'codice_linguaggio org-mode-map))
+
+
+;; Comandi personali
+
+(defun codice_linguaggio (stringa)
+  "Scrive
+#+begin_src <stringa>
+#+end_src
+Specificando il linguaggio da linea di comando."
+  (interactive "MLinguaggio: ")
+  (insert "#+begin_src " stringa "\n#+end_src"))
+
+(defun root_source (nome_file)
+  "Scrive
+#+begin_src cpp :main no :mkdirp yes :tangle macros/<nome_file>.cpp
+#+end_src
+Utile per prendere appunti su root e poi tanglare i source blocks.
+"
+  (interactive "MInserire nome file: ")
+  (codice_linguaggio (concat "cpp :main no :mkdirp yes :tangle macros/" nome_file ".cpp")))
