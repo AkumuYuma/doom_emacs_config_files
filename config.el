@@ -4,87 +4,71 @@
 ;; sync' after modifying this file!
 
 
-;; Some functionality uses this to identify you, e.g. GPG configuration, email
-;; clients, file templates and snippets.
+;; Carico i file personali nella cartella elisp
+(add-to-list 'load-path "~/.doom.d/elisp/")
+
+;; Chiedo che vengano caricati i file singolarmente, così ho a disposizione le funzioni
+(require 'exeroot)
+(require 'funzioni-generiche)
+
+;; ------------------------------------- Impostazioni personali -------------------------------
+
 (setq user-full-name "Emanuele Fiorente"
       user-mail-address "manumanu1355@gmail.com")
 
-;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
-;; are the three important ones:
-;;
-;; + `doom-font'
-;; + `doom-variable-pitch-font'
-;; + `doom-big-font' -- used for `doom-big-font-mode'; use this for
-;;   presentations or streaming.
-;;
-;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
-;; font string. You generally only need these two:
-;; (setq doom-font (font-spec :family "monospace" :size 12 :weight 'semi-light)
-;;       doom-variable-pitch-font (font-spec :family "sans" :size 13))
-
-;; There are two ways to load a theme. Both assume the theme is installed and
-;; available. You can either set `doom-theme' or manually load a theme with the
-;; `load-theme' function. This is the default:
 (setq doom-theme 'doom-gruvbox)
 
-;; If you use `org' and don't want your org files in the default location below,
-;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/org/")
+(setq org-directory "~/orgNotes/")
 
-;; This determines the style of line numbers in effect. If set to `nil', line
-;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type `relative)
 
-
-;; Here are some additional functions/macros that could help you configure Doom:
-;;
-;; - `load!' for loading external *.el files relative to this one
-;; - `use-package!' for configuring packages
-;; - `after!' for running code after a package has loaded
-;; - `add-load-path!' for adding directories to the `load-path', relative to
-;;   this file. Emacs searches the `load-path' when you load packages with
-;;   `require' or `use-package'.
-;; - `map!' for binding new keys
-;;
-;; To get information about any of these functions/macros, move the cursor over
-;; the highlighted symbol at press 'K' (non-evil users must press 'C-c c k').
-;; This will open documentation for it, including demos of how they are used.
-;;
-;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
-;; they are implemented.
+;; Nascondo i marker di enfasi nella org mode
+(setq org-hide-emphasis-markers t)
 
 
-;; Remaps
+;; Questo è un hook, praticamente si attiva quando parte la org mode (org-mode-hook) ed esegue la funzione passata come secondo argomento.
+;; In questo caso ho scritto una lambda.
+;; Cosa fa la lambda? Modifica la variabile org-file-apps (che contiene le applicazioni che la org mode fa partire quando deve aprire dei file).
+;; In particolare cancello la riga ("\\.pdf\\'" . default) (che è quella di default che apre i pdf con emacs)
+;; e la sostituisco con ("\\.pdf\\'" . "evince %s") (cioè chiedo che i pdf siano aperti con evince)
+(add-hook 'org-mode-hook
+          '(lambda ()
+             (delete '("\\.pdf\\'" . default) org-file-apps)
+             (add-to-list 'org-file-apps '("\\.pdf\\'" . "evince %s"))))
+
+;; Come effetto è simile a:
+;; (setq org-file-apps
+;;       '((remote . emacs)
+;;         (auto-mode . emacs)
+;;         (directory . emacs)
+;;         ("\\.mm\\'" . default)
+;;         ("\\.x?html?\\'" . default)
+;;         ("\\.pdf\\'" . "evince %s")))
+;; Solo che con questo cambio la variabile dappertutto, in quel caso l'ho cambiata soltanto nella org mode.
+
+
+;; --------------------------------------- Remaps ----------------------------------------------
 
 ;; Remap della evil mode
 ;; Frecce destra e sinistra per nuovo buffer
 (define-key evil-normal-state-map (kbd "<right>") 'evil-next-buffer)
 (define-key evil-normal-state-map (kbd "<left>") 'evil-prev-buffer)
 
+;; Questo è un remap di doom. La sintassi è un po' diversa ma funziona bene
+;; SPC-e-x per aprire l'explorer, è solo un remap comodo, fa esattamente quello che fa SPC-f-f
+(map! :leader
+      :desc "Apre l'explorer in una nuova finestra"
+      "e x" #'find-file)
+
 ;; Remap generici
 ;; C-c t per aprire un terminale
 (define-key global-map (kbd "C-c t") 'vterm)
+
 ;; C-c l per stampare l'intestazione nella org mode del linugaggio scelto
 ;; Viene usata questa sintassi diversa perchè faccio in modo che il keybinding valga solo nella org mode
 (with-eval-after-load 'org
   (bind-key (kbd "C-c l") 'codice_linguaggio org-mode-map))
 
-
-;; Comandi personali
-
-(defun codice_linguaggio (stringa)
-  "Scrive
-#+begin_src <stringa>
-#+end_src
-Specificando il linguaggio da linea di comando."
-  (interactive "MLinguaggio: ")
-  (insert "#+begin_src " stringa "\n#+end_src"))
-
-(defun root_source (nome_file)
-  "Scrive
-#+begin_src cpp :main no :mkdirp yes :tangle macros/<nome_file>.cpp
-#+end_src
-Utile per prendere appunti su root e poi tanglare i source blocks.
-"
-  (interactive "MInserire nome file: ")
-  (codice_linguaggio (concat "cpp :main no :mkdirp yes :tangle macros/" nome_file ".cpp")))
+;; C-c C-r per tanglare e compilare la macro di root
+(with-eval-after-load 'org
+  (bind-key (kbd "C-c C-r") 'exeroot-tangla-e-compila-sezione org-mode-map))
